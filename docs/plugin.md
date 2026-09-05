@@ -4,6 +4,14 @@ The root manifest declares one standalone panel:
 `io.github.stackingturtles.t480fingerprint`. `Panel.qml` runs inside the existing
 Omarchy shell. It never starts a second Quickshell process.
 
+`scripts/launcher.py install` registers `t480fingerprint.desktop` as
+`$XDG_DATA_HOME/applications/io.github.stackingturtles.t480fingerprint.desktop`
+(default `~/.local/share/applications`). The entry opens the panel through the
+existing shell IPC command; it never launches another shell process or elevates
+privileges. Run `scripts/launcher.py remove` before `omarchy plugin remove`.
+Registration/removal preserve custom or symlinked entries and are idempotent.
+Omarchy has no custom install/remove hooks, so both steps are explicit.
+
 The panel reads USB vendor/product identifiers, the package version and sudo
 configuration through `scripts/plugin.py status`. It does not open the reader,
 read templates or request privileges. Status refreshes every five seconds while

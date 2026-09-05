@@ -15,4 +15,5 @@ ln -s /usr/share/omarchy/shell "$stage/imports/qs"
 # QProcess::ExitStatus. These two metadata warnings also affect built-ins.
 /usr/lib/qt6/bin/qmllint -I "$stage/imports" \
   --uncreatable-type disable --signal-handler-parameters disable "$stage/plugin/Panel.qml"
-uv run --with pytest pytest -q -p no:cacheprovider tests/test_plugin.py tests/test_sudo_auth.py
+desktop-file-validate "$stage/plugin/t480fingerprint.desktop"
+uv run --with pytest pytest -q -p no:cacheprovider tests/test_plugin.py tests/test_sudo_auth.py tests/test_launcher.py

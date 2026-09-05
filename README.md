@@ -10,12 +10,17 @@ fingerprint authentication only after enrollment and verification succeed.
 
 ## Install
 
-Add the plugin to Omarchy and open its settings panel:
+Add the plugin to Omarchy and register its application launcher entry:
 
 ```sh
 omarchy plugin add https://github.com/stackingturtles/t480fingerprint.git --enable
-omarchy-shell shell summon io.github.stackingturtles.t480fingerprint '{}'
+python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py install
 ```
+
+Open the Omarchy application launcher, search for **T480 Fingerprint**, and
+select it. Launcher registration uses your user application directory and does
+not require sudo. Omarchy does not run custom plugin installation/removal hooks,
+so registration is an explicit setup step.
 
 Choose **Install / update driver**. A terminal opens to install dependencies,
 build the pinned driver, run its tests and install the Arch package. Builds run
@@ -55,7 +60,8 @@ under `/opt/t480fingerprint`; sudo setup loads its driver through a local
 
 ## Use
 
-Open the panel with:
+Open the Omarchy application launcher and search for **T480 Fingerprint**.
+You can also open the panel directly with:
 
 ```sh
 omarchy-shell shell summon io.github.stackingturtles.t480fingerprint '{}'
@@ -111,11 +117,13 @@ pkexec /opt/t480fingerprint/bin/t480-sudo-auth disable
 To remove everything, restore password-only sudo first, then run:
 
 ```sh
+python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py remove
 omarchy plugin remove io.github.stackingturtles.t480fingerprint
 sudo pacman -R t480fingerprint-lab
 ```
 
-Removing or disabling just the panel leaves the driver, enrollment and sudo
+Remove the launcher entry before deleting the plugin directory. Removing or
+disabling just the panel leaves the driver, enrollment and sudo
 configuration in place. The panel launches privileged operations only from
 explicit button actions; the root-owned helper handles authentication changes.
 The integration covers sudo; desktop login and screen unlocking require
@@ -137,7 +145,9 @@ uv run --with ruff ruff format --check tools/sudo-auth.py scripts/plugin.py test
 ```
 
 `test-plugin.sh` validates a clean plugin snapshot and lints QML against the
-installed shell imports. It suppresses two known Quickshell metadata warnings
+installed shell imports. It also validates the desktop entry with
+`desktop-file-validate` (from `desktop-file-utils`) and tests launcher installation
+and removal. It suppresses two known Quickshell metadata warnings
 (`PanelWindow` creatability and `QProcess::ExitStatus`); test the live panel too.
 See [plugin development](docs/plugin.md) for the lifecycle checklist.
 
