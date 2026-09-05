@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Stacking Turtles Ltd. SPDX-License-Identifier: MIT
 pkgname=t480fingerprint-lab
 pkgver=1.94.100.r626.0fd7856
-pkgrel=4
+pkgrel=5
 pkgdesc='Isolated native Validity driver and guarded T480 enrollment/verification test'
 arch=('x86_64')
 url='https://gitlab.freedesktop.org/libfprint/libfprint/-/merge_requests/626'

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=T480 Fingerprint
+Comment=Set up and test ThinkPad T480 fingerprint authentication
+Exec=omarchy-shell shell summon io.github.stackingturtles.t480fingerprint {}
+TryExec=omarchy-shell
+Icon=auth-fingerprint-symbolic
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=fingerprint;authentication;sudo;ThinkPad;T480;

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.stackingturtles.t480fingerprint",
+  "name": "T480 Fingerprint",
+  "version": "1.0.0",
+  "author": "Stacking Turtles Ltd.",
+  "license": "MIT",
+  "description": "Set up and test ThinkPad T480 fingerprints with password fallback for sudo.",
+  "kinds": ["panel"],
+  "entryPoints": {"panel": "Panel.qml"}
+}

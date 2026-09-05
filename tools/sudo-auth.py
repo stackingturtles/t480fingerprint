@@ -122,12 +122,13 @@ def prepare_driver() -> None:
     print("fprintd loaded the guarded T480 driver.", flush=True)
 
 
-def setup(user: str, finger: str) -> None:
+def setup(user: str, finger: str, enable_sudo: bool = True) -> None:
     account = pwd.getpwnam(user)
     if account.pw_uid == 0 or user.startswith("-"):
         raise ValueError("Choose a non-root login account.")
     # Validate policy before touching the reader. Read it again after scans.
-    pam_content(PAM.read_text(), True)
+    if enable_sudo:
+        pam_content(PAM.read_text(), True)
     if not Path("/usr/bin/omarchy-hw-laptop-closed").is_file():
         raise ValueError("Omarchy lid helper is missing.")
     prepare_driver()
@@ -146,11 +147,17 @@ def setup(user: str, finger: str) -> None:
     )
     # fprintd v1.94.5 exits zero only for verify-match, not a non-match/error.
     run("/usr/bin/fprintd-verify", "-f", finger, user, timeout=30)
-    replace_config(PAM, pam_content(PAM.read_text(), True))
-    print(
-        "SUCCESS: sudo fingerprint authentication enabled; password fallback remains.",
-        flush=True,
-    )
+    if enable_sudo:
+        replace_config(PAM, pam_content(PAM.read_text(), True))
+        print(
+            "SUCCESS: sudo fingerprint authentication enabled; password fallback remains.",
+            flush=True,
+        )
+    else:
+        print(
+            "SUCCESS: fingerprint enrolled and verified. Sudo policy unchanged.",
+            flush=True,
+        )
 
 
 def disable() -> None:
@@ -170,19 +177,21 @@ def disable() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["driver", "setup", "disable"])
+    parser.add_argument("action", choices=["driver", "prepare", "setup", "disable"])
     parser.add_argument("--user", default=os.environ.get("SUDO_USER"))
     parser.add_argument("--finger", choices=FINGERS, default="right-index-finger")
     args = parser.parse_args()
     if os.geteuid() != 0:
         parser.error("Run with sudo (or pkexec for driver/disable).")
-    if args.action == "setup" and (not args.user or not sys.stdin.isatty()):
+    if args.action in ("setup", "prepare") and (
+        not args.user or not sys.stdin.isatty()
+    ):
         parser.error("Setup needs --user and a visible terminal for fingerprint scans.")
     try:
         with open("/run/t480fingerprint-auth.lock", "w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            if args.action == "setup":
-                setup(args.user, args.finger)
+            if args.action in ("setup", "prepare"):
+                setup(args.user, args.finger, enable_sudo=args.action == "setup")
             elif args.action == "driver":
                 prepare_driver()
             else:

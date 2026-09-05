@@ -27,6 +27,31 @@ def test_policy_preserves_password_and_rollback():
         auth.pam_content(enabled.replace("timeout=10", "timeout=20"), False)
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+def test_prepare_does_not_change_sudo(tmp_path, monkeypatch, enabled):
+    import getpass
+
+    pam = tmp_path / "sudo"
+    original = auth.pam_content(ORIGINAL, True) if enabled else ORIGINAL
+    pam.write_text(original)
+    monkeypatch.setattr(auth, "PAM", pam)
+    monkeypatch.setattr(auth, "prepare_driver", lambda: None)
+    calls = []
+
+    def run(command, *args, **kwargs):
+        calls.append(command)
+        return ""
+
+    monkeypatch.setattr(auth, "run", run)
+    auth.setup(getpass.getuser(), "right-index-finger", enable_sudo=False)
+    assert pam.read_text() == original
+    assert calls == [
+        "/usr/bin/fprintd-list",
+        "/usr/bin/fprintd-enroll",
+        "/usr/bin/fprintd-verify",
+    ]
+
+
 @pytest.mark.parametrize("fail_at", ["enroll", "verify", "timeout", None])
 @pytest.mark.parametrize("existing", [False, True])
 def test_setup_requires_successful_verification(

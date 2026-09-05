@@ -3,12 +3,32 @@
 Fingerprint authentication for the **Lenovo ThinkPad T480** on **Omarchy**, using
 its Synaptics Metallica MIS Touch reader (USB `06cb:009a`).
 
-The package provides a guarded native driver, persistent fingerprint enrollment,
+The plugin provides a settings panel, a guarded native driver, persistent fingerprint enrollment,
 and integration with sudo's PAM stack. A matching fingerprint authenticates;
 a failed scan or scan timeout falls back to your password. Setup enables
 fingerprint authentication only after enrollment and verification succeed.
 
 ## Install
+
+Add the plugin to Omarchy and register its application launcher entry:
+
+```sh
+omarchy plugin add https://github.com/stackingturtles/t480fingerprint.git --enable
+python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py install
+```
+
+Open the Omarchy application launcher, search for **T480 Fingerprint**, and
+select it. Launcher registration uses your user application directory and does
+not require sudo. Omarchy does not run custom plugin installation/removal hooks,
+so registration is an explicit setup step.
+
+Choose **Install / update driver**. A terminal opens to install dependencies,
+build the pinned driver, run its tests and install the Arch package. Builds run
+in a temporary directory under `~/.cache/t480fingerprint`, outside the plugin
+folder. Installation may take several minutes and ask for your password.
+Opening or enabling the panel does not install software or change authentication.
+
+### Manual package installation
 
 You need Omarchy on x86-64 and the supported fingerprint reader. The sudo setup
 uses Omarchy's laptop-lid helper and the standard `auth include system-auth`
@@ -31,7 +51,7 @@ cd t480fingerprint
 ./scripts/build-interactive.sh
 ./scripts/test.sh
 ./scripts/package.sh
-sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-4-x86_64.pkg.tar.zst
+sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-5-x86_64.pkg.tar.zst
 ```
 
 The build fetches pinned driver and runtime-data sources. The package installs
@@ -40,7 +60,20 @@ under `/opt/t480fingerprint`; sudo setup loads its driver through a local
 
 ## Use
 
-From the repository directory, run in a terminal:
+Open the Omarchy application launcher and search for **T480 Fingerprint**.
+You can also open the panel directly with:
+
+```sh
+omarchy-shell shell summon io.github.stackingturtles.t480fingerprint '{}'
+```
+
+Select a finger and choose **Prepare fingerprint** to enroll and verify it in a
+terminal. Then choose **Enable fingerprint sudo**; the helper verifies your
+finger again before changing PAM. **Test fingerprint** checks a saved enrollment.
+**Restore password-only sudo** removes the integration while retaining prints.
+Reopen the panel to see updated status. Escape or a click outside closes it.
+
+For the combined enrollment and sudo setup from a source checkout, run:
 
 ```sh
 ./scripts/setup-sudo.sh
@@ -81,7 +114,18 @@ To restore password-only sudo while retaining enrolled fingerprints:
 pkexec /opt/t480fingerprint/bin/t480-sudo-auth disable
 ```
 
-Run this before uninstalling with `sudo pacman -R t480fingerprint-lab`.
+To remove everything, restore password-only sudo first, then run:
+
+```sh
+python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py remove
+omarchy plugin remove io.github.stackingturtles.t480fingerprint
+sudo pacman -R t480fingerprint-lab
+```
+
+Remove the launcher entry before deleting the plugin directory. Removing or
+disabling just the panel leaves the driver, enrollment and sudo
+configuration in place. The panel launches privileged operations only from
+explicit button actions; the root-owned helper handles authentication changes.
 The integration covers sudo; desktop login and screen unlocking require
 separate configuration. Sensor deletion and clearing are blocked while the
 service's preservation policy is active.
@@ -93,11 +137,19 @@ Build the guarded driver and run the automated tests as your regular user:
 ```sh
 ./scripts/build-interactive.sh
 ./scripts/test.sh
+./scripts/test-plugin.sh
 uv run --with pytest pytest -q -p no:cacheprovider \
-  tests/test_sudo_auth.py tests/test_build_packaging.py
-uv run --with ruff ruff check tools/sudo-auth.py tests/test_sudo_auth.py
-uv run --with ruff ruff format --check tools/sudo-auth.py tests/test_sudo_auth.py
+  tests/test_sudo_auth.py tests/test_plugin.py tests/test_build_packaging.py
+uv run --with ruff ruff check tools/sudo-auth.py scripts/plugin.py tests/test_sudo_auth.py tests/test_plugin.py
+uv run --with ruff ruff format --check tools/sudo-auth.py scripts/plugin.py tests/test_sudo_auth.py tests/test_plugin.py
 ```
+
+`test-plugin.sh` validates a clean plugin snapshot and lints QML against the
+installed shell imports. It also validates the desktop entry with
+`desktop-file-validate` (from `desktop-file-utils`) and tests launcher installation
+and removal. It suppresses two known Quickshell metadata warnings
+(`PanelWindow` creatability and `QProcess::ExitStatus`); test the live panel too.
+See [plugin development](docs/plugin.md) for the lifecycle checklist.
 
 These tests cover simulated reader operations, enrollment workflow, print
 ownership, storage preservation, PAM password fallback, and packaging.

@@ -10,6 +10,32 @@ import pytest
 REPO = Path(__file__).resolve().parents[1]
 
 
+def test_failed_checkout_stops_baseline_build(tmp_path):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    shutil.copy2(REPO / "scripts/build.sh", scripts / "build.sh")
+    (tmp_path / "sources").mkdir()
+    (tmp_path / "sources/libfprint").symlink_to(REPO / "sources/libfprint", target_is_directory=True)
+    (tmp_path / "build").mkdir()
+    (tmp_path / "build/build.ninja").touch()
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    marker = tmp_path / "executed-after-failed-pin"
+    git = fake_bin / "git"
+    git.write_text('#!/bin/bash\nfor arg in "$@"; do [[ $arg != checkout ]] || exit 42; done\nexec /usr/bin/git "$@"\n')
+    git.chmod(0o755)
+    for command in ("meson", "cc"):
+        fake = fake_bin / command
+        fake.write_text('#!/bin/sh\ntouch "$PIN_FAILURE_MARKER"\n')
+        fake.chmod(0o755)
+    result = subprocess.run(["bash", str(scripts / "build.sh")],
+                            env=os.environ | {"PATH": str(fake_bin) + ":" + os.environ["PATH"],
+                                              "PIN_FAILURE_MARKER": str(marker)},
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert not marker.exists(), "No build step may run after a failed checkout pin"
+
+
 def test_default_git_diff_prefix():
     env = os.environ | {
         "GIT_CONFIG_COUNT": "1",

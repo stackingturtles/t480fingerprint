@@ -15,7 +15,7 @@ other drivers omitted from this focused build and disabled hwdb generation.
 
 ```sh
 ./scripts/package.sh
-sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-3-x86_64.pkg.tar.zst
+sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-5-x86_64.pkg.tar.zst
 ```
 
 This installs a private shared library, runtime data and test programs in `/opt/t480fingerprint`.

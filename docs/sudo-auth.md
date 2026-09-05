@@ -5,20 +5,20 @@ and the sudo workflow working. The managed sudo PAM block is active. Automated
 tests verify password fallback routing; individual physical fallback, closed-lid
 and suspend/resume results have not been separately reported.
 
-Release -4 adds opt-in sudo authentication using Arch's stock fprintd and
+Release -5 adds opt-in sudo authentication using Arch's stock fprintd and
 pam_fprintd with the guarded native driver. Setup changes only sudo's PAM
 service and a local fprintd service override. The lock screen, polkit, SDDM,
 disk passphrase and TPM settings are unaffected.
 
 ## Install and prepare
 
-Build and install as documented in testing.md, using package release -4:
+Build and install as documented in testing.md, using package release -5:
 
 ```sh
 ./scripts/build-interactive.sh
 ./scripts/test.sh
 ./scripts/package.sh
-sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-4-x86_64.pkg.tar.zst
+sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-5-x86_64.pkg.tar.zst
 ./scripts/setup-sudo.sh
 ```
 

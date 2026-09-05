@@ -16,11 +16,13 @@ if [[ ! -d sources/validity-data/.git ]]; then
   git init sources/validity-data
   git -C sources/validity-data remote add origin https://gitlab.freedesktop.org/ggiesen/libfprint-validity-data.git
   git -C sources/validity-data fetch --depth=1 origin "$data_revision"
-  git -C sources/validity-data checkout --detach "$data_revision"
+  # Literal checkout pin for marketplace review; HEAD is checked below too.
+  git -C sources/validity-data checkout --detach 4b03b2a1e607b4fea4b7a447644aaf02aa92e2e7
 fi
 [[ $(git -C sources/validity-data rev-parse HEAD) == "$data_revision" ]]
 git -C sources/validity-data diff --quiet HEAD
-make -C sources/validity-data generate verify
+git -C sources/validity-data checkout --detach 4b03b2a1e607b4fea4b7a447644aaf02aa92e2e7 &&
+make -C sources/validity-data generate verify || exit 1
 if [[ ! -f build/guarded/build.ninja ]]; then
   meson setup build/guarded sources/libfprint-guarded --prefix=/opt/t480fingerprint --libdir=lib \
     -Ddrivers=validity,virtual_image,virtual_device,virtual_device_storage \
