@@ -1,0 +1,17 @@
+# Copyright (c) 2026 Stacking Turtles Ltd. SPDX-License-Identifier: MIT
+pkgname=t480fingerprint-lab
+pkgver=1.94.100.r626.0fd7856
+pkgrel=3
+pkgdesc='Isolated native Validity driver and guarded T480 enrollment/verification test'
+arch=('x86_64')
+url='https://gitlab.freedesktop.org/libfprint/libfprint/-/merge_requests/626'
+license=('LGPL-2.1-or-later' 'MIT')
+depends=('glib2' 'libgusb' 'openssl' 'pixman' 'cairo')
+options=('!debug')
+source=('lab.tar.gz')
+sha256sums=('REPLACE_BY_PACKAGE_SCRIPT')
+package() {
+  install -dm755 "$pkgdir/opt/t480fingerprint"
+  cp -a "$srcdir/lab/." "$pkgdir/opt/t480fingerprint/"
+  install -Dm644 "$srcdir/lab/licenses/project-MIT" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
