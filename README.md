@@ -8,7 +8,11 @@ and integration with sudo's PAM stack. A matching fingerprint authenticates;
 a failed scan or scan timeout falls back to your password. Setup enables
 fingerprint authentication only after enrollment and verification succeed.
 
+![T480 Fingerprint settings panel](docs/images/settings-panel.png)
+
 ## Install
+
+You need Omarchy on x86-64 and the supported ThinkPad T480 reader.
 
 Add the plugin to Omarchy and register its application launcher entry:
 
@@ -28,35 +32,8 @@ in a temporary directory under `~/.cache/t480fingerprint`, outside the plugin
 folder. Installation may take several minutes and ask for your password.
 Opening or enabling the panel does not install software or change authentication.
 
-### Manual package installation
-
-You need Omarchy on x86-64 and the supported fingerprint reader. The sudo setup
-uses Omarchy's laptop-lid helper and the standard `auth include system-auth`
-PAM configuration.
-
-Install the build, test and authentication dependencies:
-
-```sh
-sudo pacman -S --needed base-devel git meson ninja glib2-devel \
-  gobject-introspection libgusb libgudev openssl cairo pixman umockdev \
-  python python-cairo python-gobject python-mako python-markdown python-tqdm \
-  fprintd uv
-```
-
-Clone the repository, build as your regular user, and install the package:
-
-```sh
-git clone https://github.com/stackingturtles/t480fingerprint.git
-cd t480fingerprint
-./scripts/build-interactive.sh
-./scripts/test.sh
-./scripts/package.sh
-sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-5-x86_64.pkg.tar.zst
-```
-
-The build fetches pinned driver and runtime-data sources. The package installs
-under `/opt/t480fingerprint`; sudo setup loads its driver through a local
-`fprintd` service override and backs up configuration before changing it.
+For installation from a source checkout without the panel, see
+[manual installation](docs/manual-install.md).
 
 ## Use
 
@@ -67,31 +44,24 @@ You can also open the panel directly with:
 omarchy-shell shell summon io.github.stackingturtles.t480fingerprint '{}'
 ```
 
-Select a finger and choose **Prepare fingerprint** to enroll and verify it in a
-terminal. Then choose **Enable fingerprint sudo**; the helper verifies your
-finger again before changing PAM. **Test fingerprint** checks a saved enrollment.
-**Restore password-only sudo** removes the integration while retaining prints.
-Reopen the panel to see updated status. Escape or a click outside closes it.
+1. Select the finger you want to enroll, then choose **Prepare fingerprint**.
+   In the terminal, enter your password if requested, repeatedly touch and lift
+   that finger to enroll it, then scan it once more to verify. Wait for **SUCCESS**
+   and press Enter to close the terminal. Preparation leaves sudo policy unchanged.
+2. Reopen **T480 Fingerprint** from the launcher and select the same finger again
+   (the panel defaults to the right index finger). Choose **Enable fingerprint sudo**.
+   Follow the terminal prompts and verify your finger again. Only a successful
+   verification enables fingerprint authentication for sudo.
+3. Reopen the panel to check that it reports **Sudo: fingerprint enabled**.
+   To check a saved enrollment later, select its finger and choose **Test fingerprint**.
 
-For the combined enrollment and sudo setup from a source checkout, run:
+Each action closes the panel and opens a terminal; reopen it for the next step.
+An existing enrollment for the selected finger is reused. To add another finger,
+select it and repeat **Prepare fingerprint**. Escape or a click outside closes the panel.
 
-```sh
-./scripts/setup-sudo.sh
-```
-
-Enter your password, then follow the prompts:
-
-1. **PREPARE:** repeatedly touch and lift your right index finger to enroll it.
-2. **VERIFY:** lift your finger and scan it again.
-3. After successful verification, the helper enables fingerprint authentication
-   in `/etc/pam.d/sudo`, preserving the existing password stack.
-
-Enrollment is retained for your Linux account. An existing enrollment for the
-selected finger is reused. To enroll and verify another finger:
-
-```sh
-./scripts/setup-sudo.sh --finger left-index-finger
-```
+If preparation or verification is unavailable, check that the reader is detected
+and complete **Install / update driver** first. Once the required package is
+installed, that button becomes **Reinstall driver**, as shown in the screenshot.
 
 Test sudo authentication:
 
@@ -108,7 +78,8 @@ prompt; use `sudo -k` before each test.
 To check password fallback, repeat the test with an unenrolled finger or wait
 without scanning, then enter your password.
 
-To restore password-only sudo while retaining enrolled fingerprints:
+Choose **Restore password-only sudo** in the panel to remove the integration
+while retaining enrolled fingerprints. If the panel is unavailable, run:
 
 ```sh
 pkexec /opt/t480fingerprint/bin/t480-sudo-auth disable
