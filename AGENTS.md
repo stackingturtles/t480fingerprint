@@ -61,3 +61,11 @@ tests/print-lifetime.c reproduces old premature finalization and passes the fix
 without hardware. Eight workflow cases pass. Do not claim a successful physical
 match until the user reruns. Old crash's temporary enrollment may remain; no
 saved recovery reference exists, so do not delete uncertain sensor records.
+
+## Build/package regression gates
+
+After changing source verification or packaging, run scripts/test.sh and
+`uv run --with pytest pytest -q -p no:cacheprovider tests/test_build_packaging.py`
+after the interactive build. Five integration cases cover Git-prefix independence,
+rejection of unreviewed edits, real-index preservation, obsolete staging exclusion,
+and cleanup on package success/failure. Tests build isolated packages, never install.

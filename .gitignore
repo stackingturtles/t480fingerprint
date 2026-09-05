@@ -10,3 +10,6 @@ __pycache__/
 # Local diagnostics and sensitive device state must stay untracked
 /private/
 /local/
+
+# Local review ledgers
+/docs/reviews/

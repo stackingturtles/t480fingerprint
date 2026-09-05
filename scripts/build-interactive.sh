@@ -11,7 +11,7 @@ if [[ ! -e sources/libfprint-guarded/.git ]]; then
 fi
 [[ $(git -C sources/libfprint-guarded rev-parse HEAD) == "$revision" ]]
 # Require exactly our reviewed patch, not arbitrary edits to privileged runtime code.
-git -C sources/libfprint-guarded diff --binary | cmp - patches/0001-guard-sensor-initialization.patch
+python3 scripts/check-patched-source.py sources/libfprint-guarded patches/0001-guard-sensor-initialization.patch
 if [[ ! -d sources/validity-data/.git ]]; then
   git init sources/validity-data
   git -C sources/validity-data remote add origin https://gitlab.freedesktop.org/ggiesen/libfprint-validity-data.git

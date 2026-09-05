@@ -154,3 +154,24 @@ may have left its temporary sensor record. It cannot safely be distinguished
 from other records using a saved reference, because -2 did not persist one.
 No existing fingerprint was deleted as part of this repair. Do not bulk-clear
 sensor storage to remove it.
+
+## Build and packaging regressions
+
+After `./scripts/build-interactive.sh`, run both test gates:
+
+```sh
+./scripts/test.sh
+uv run --with pytest pytest -q -p no:cacheprovider tests/test_build_packaging.py
+```
+
+The five Python cases exercise the real incremental build with default Git diff
+prefixes, source validation with both prefix settings (including rejecting extra
+edits and preserving the real index), and isolated package builds that exclude
+obsolete staging files and clean up after success or failure. They need `uv`,
+the normal build dependencies and `makepkg`; no root, install or sensor access
+is used. The first invocation may download pytest into uv's cache.
+
+Source validation uses a disposable Git index populated from HEAD plus the
+reviewed patch. It compares source contents rather than user-configurable diff
+formatting. Packaging allocates a fresh staging directory per invocation and
+removes only that directory, leaving any pre-existing staging work untouched.

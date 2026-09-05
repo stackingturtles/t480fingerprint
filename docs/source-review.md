@@ -40,8 +40,8 @@ security audit of the driver, protocol, or cryptography.
 worktree, keeping the upstream checkout intact. It rejects initial pairing and
 re-pairing when TLS keys are absent, rejects factory reset, clean-slate setup and
 firmware extension upload, and loads the packaged data under
-`/opt/t480fingerprint/share/validity`. The build verifies the worktree diff is
-exactly this recorded patch. This protects startup paths; it does not make the
+`/opt/t480fingerprint/share/validity`. The build checks source contents against HEAD plus this recorded patch using a
+disposable Git index, independently of personal diff-formatting settings. This protects startup paths; it does not make the
 enrollment operation read-only.
 
 The interactive tool opens normally, creates one uniquely named temporary sensor
