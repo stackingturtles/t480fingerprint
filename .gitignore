@@ -1,0 +1,15 @@
+# Local build trees and artifacts
+/build/
+/sources/
+/src/
+/pkg/
+*.pkg.tar.*
+*.log
+__pycache__/
+.venv/
+# Local diagnostics and sensitive device state must stay untracked
+/private/
+/local/
+
+# Local review ledgers
+/docs/reviews/
