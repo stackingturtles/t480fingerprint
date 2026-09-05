@@ -9,6 +9,7 @@ package_stage=$(mktemp -d "$PWD/build/package-stage.XXXXXX")
 trap 'python3 -c "import shutil, sys; shutil.rmtree(sys.argv[1])" "$package_stage"' EXIT
 mkdir -p "$package_stage"/lab/{bin,lib,licenses}
 install -m755 build/guarded/t480-probe build/guarded/t480-enroll-verify "$package_stage"/lab/bin/
+install -m755 tools/sudo-auth.py "$package_stage"/lab/bin/t480-sudo-auth
 # Copy only shared libraries/symlinks, not Meson's similarly named object directory.
 for library in build/guarded/libfprint/libfprint-2.so*; do
   [[ -f $library ]] || continue

@@ -26,7 +26,7 @@ def test_default_git_diff_prefix():
 @pytest.mark.parametrize("package_failure", [False, True])
 def test_package_discards_obsolete_staging(tmp_path, package_failure):
     files = [
-        "scripts/package.sh", "packaging/PKGBUILD", "LICENSE",
+        "scripts/package.sh", "packaging/PKGBUILD", "LICENSE", "tools/sudo-auth.py",
         "patches/0001-guard-sensor-initialization.patch",
         "sources/libfprint/COPYING", "sources/validity-data/LICENSE",
         "build/guarded/t480-probe", "build/guarded/t480-enroll-verify",

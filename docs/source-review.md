@@ -55,3 +55,21 @@ print; no bulk-clear API is invoked by the tool.
 Runtime data is now included in the isolated package (-2); vendor firmware
 remains absent. Eight workflow tests pass and the guarded upstream suite passes
 99 entries with 32 skips, including the 172-case Validity unit test.
+# Sudo integration additions — 2026-09-05
+
+Reviewed stock fprintd v1.94.5 source (commit
+`b54a007ccf58ac0ae074c7151b223f35cbd17306`). Its enrollment path can garbage-collect
+untracked sensor prints, including duplicates; it can clear storage for devices
+without listing support. The Validity driver does support listing, but the
+service now sets `FP_T480_PRESERVE_PRINTS=1` and our guard patch rejects both
+delete and clear-storage before any operation. This prevents deletion of
+the potentially orphaned record from the earlier test crash. The setting is
+scoped to fprintd so the separate temporary test can still clean up its own print.
+Emulation checks both rejected operations, retained storage, and matching.
+
+Stock fprintd authentication/authorization is retained. Sudo uses pam_fprintd
+with one attempt and a 10-second scan window, followed by the existing password
+stack. The helper enables that rule only after fprintd-enroll and fprintd-verify
+succeed; v1.94.5 sources confirm failure/non-match exit nonzero. Setup reuses
+existing account/finger references to avoid automatic replacement. See
+[sudo setup](sudo-auth.md) for the scope, tests and rollback.
