@@ -1,126 +1,131 @@
 # T480 Fingerprint
 
-Enable the ThinkPad T480's **Synaptics Metallica MIS Touch fingerprint reader
-(USB 06cb:009a)** on Arch Linux / Omarchy, starting with host `tank`.
+Fingerprint authentication for the **Lenovo ThinkPad T480** on **Omarchy**, using
+its Synaptics Metallica MIS Touch reader (USB `06cb:009a`).
 
-**Status (2026-09-05):** the user confirmed persistent enrollment, verification
-and fingerprint sudo working on `tank`. Package release -4 provides the guarded
-native driver and setup helper under `/opt/t480fingerprint`. Automated tests
-passed. Optional sudo integration is available below; it activates only after
-a successful persistent enrollment and verification.
-See [testing](docs/testing.md) and [source review](docs/source-review.md).
+The package provides a guarded native driver, persistent fingerprint enrollment,
+and integration with sudo's PAM stack. A matching fingerprint authenticates;
+a failed scan or scan timeout falls back to your password. Setup enables
+fingerprint authentication only after enrollment and verification succeed.
 
-## Enable fingerprint sudo
+## Install
 
-With package release **-4** installed, run in a visible terminal:
+You need Omarchy on x86-64 and the supported fingerprint reader. The sudo setup
+uses Omarchy's laptop-lid helper and the standard `auth include system-auth`
+PAM configuration.
+
+Install the build, test and authentication dependencies:
 
 ```sh
-cd ~/code/t480fingerprint
+sudo pacman -S --needed base-devel git meson ninja glib2-devel \
+  gobject-introspection libgusb libgudev openssl cairo pixman umockdev \
+  python python-cairo python-gobject python-mako python-markdown python-tqdm \
+  fprintd uv
+```
+
+Clone the repository, build as your regular user, and install the package:
+
+```sh
+git clone https://github.com/stackingturtles/t480fingerprint.git
+cd t480fingerprint
+./scripts/build-interactive.sh
+./scripts/test.sh
+./scripts/package.sh
+sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-4-x86_64.pkg.tar.zst
+```
+
+The build fetches pinned driver and runtime-data sources. The package installs
+under `/opt/t480fingerprint`; sudo setup loads its driver through a local
+`fprintd` service override and backs up configuration before changing it.
+
+## Use
+
+From the repository directory, run in a terminal:
+
+```sh
 ./scripts/setup-sudo.sh
 ```
 
-Enter your password, then follow **PREPARE** (repeated finger scans) and
-**VERIFY** (scan once more). This enrollment is retained for your Linux account.
-An existing right-index enrollment is verified without replacing it.
-Choose another finger with `./scripts/setup-sudo.sh --finger left-index-finger`.
+Enter your password, then follow the prompts:
 
-After success, run `sudo -k` then `sudo -v`. A matching fingerprint authenticates;
-one failed attempt or a 10-second scan timeout leads to the normal password prompt.
-With the laptop lid closed, sudo skips the scanner. Cached sudo authorization
-and commands allowed with NOPASSWD do not prompt.
+1. **PREPARE:** repeatedly touch and lift your right index finger to enroll it.
+2. **VERIFY:** lift your finger and scan it again.
+3. After successful verification, the helper enables fingerprint authentication
+   in `/etc/pam.d/sudo`, preserving the existing password stack.
 
-See [sudo setup, tests and recovery](docs/sudo-auth.md) for installation,
-additional fingerprints, password fallback tests and rollback.
-
-## Run the fingerprint test
-
-From a visible terminal:
+Enrollment is retained for your Linux account. An existing enrollment for the
+selected finger is reused. To enroll and verify another finger:
 
 ```sh
-cd ~/code/t480fingerprint
-./scripts/enroll-verify.sh
+./scripts/setup-sudo.sh --finger left-index-finger
 ```
 
-Enter your sudo password if asked. During **PREPARE**, repeatedly touch and lift
-your **right index finger** until enrollment completes. During **VERIFY**, lift
-it and scan again. The test prints **RESULT: SUCCESS** for a match or
-**RESULT: FAIL (no match)** for a different finger. Hardware/setup errors print
-**RESULT: ERROR (test incomplete)** and never count as a match.
-
-This is a temporary enrollment: the test removes only its own completed print
-after verification. It does not enable fingerprint login. You can rerun the same
-command to repeat the test. See [the full testing guide](docs/testing.md) for
-exit codes, timeouts, cancellation, installation and troubleshooting.
-
-## Build and automated tests
+Test sudo authentication:
 
 ```sh
-./scripts/build.sh               # original pinned upstream baseline
-./scripts/build-interactive.sh   # guarded driver, runtime data, interactive test
-./scripts/test.sh                # workflow and simulated upstream tests
-./scripts/package.sh             # package the guarded build
+sudo -k
+sudo -v
 ```
 
-Build dependencies: `base-devel git meson ninja glib2-devel gobject-introspection
-libgusb libgudev openssl cairo umockdev python-cairo python-gobject`.
-Install missing dependencies with `omarchy pkg add <packages...>`.
+Scan your enrolled finger to authenticate. One failed attempt or a 10-second
+scan timeout leads to the password prompt. With the lid closed, sudo skips the
+scanner. Cached sudo credentials and commands permitted with `NOPASSWD` do not
+prompt; use `sudo -k` before each test.
 
-By default the laboratory library is loaded only by test executables.
-Optional sudo setup makes the stock fprintd service load this private library
-through a local systemd drop-in. System libfprint is not replaced.
+To check password fallback, repeat the test with an unenrolled finger or wait
+without scanning, then enter your password.
 
-The 2026-09-05 inspection found fprintd 1.94.5-2 and libfprint 1.94.100-1
-installed, but `fprintd-list ijonas` returned `No devices available`.
-See [the investigation](docs/investigation.md) for sources and uncertainties.
-
-## Approach
-
-Investigate native libfprint support from upstream merge request !626, review
-its source and required firmware/data handling, then build a pinned Arch package.
-Git and the GitLab API are accessible; MR !626 was still open at this inspection.
-The pinned commit is `0fd78560a245eebec1c93e71ee1f29b15ec1be67`.
-Ubuntu packages mentioned in the investigation are reference material, not Arch
-installation artifacts. The older python-validity/open-fprintd route has an
-upstream D-Bus authorization warning that needs resolution before authentication use.
-
-## Development milestones
-
-1. Obtain the native driver source; record its upstream URL, commit, license,
-   patch set, firmware requirements, and current review/merge status.
-2. Review initialization, sensor writes, enrollment storage, and authorization.
-   Establish whether existing sensor data would be affected before device tests.
-3. Create a reproducible Arch package with pinned inputs and verified downloads.
-   Record a package rollback procedure before installing it.
-4. Verify device detection, then enroll and verify a finger with the user present.
-5. Enable Omarchy screen unlocking after verification, retaining password access.
-   Test password fallback, failed matches, and suspend/resume with the user.
-6. Configure sudo/polkit only within the user's chosen authentication scope;
-   document installation, updates, and recovery for Fleet integration later.
-
-## Read-only checks
+To restore password-only sudo while retaining enrolled fingerprints:
 
 ```sh
-lsusb -d 06cb:009a
-pacman -Q fprintd libfprint
-fprintd-list "$USER"
+pkexec /opt/t480fingerprint/bin/t480-sudo-auth disable
 ```
 
-The last command queries the service and may activate it through D-Bus. It does
-not enroll a finger. Do not commit its output if it contains enrollment details.
+Run this before uninstalling with `sudo pacman -R t480fingerprint-lab`.
+The integration covers sudo; desktop login and screen unlocking require
+separate configuration. Sensor deletion and clearing are blocked while the
+service's preservation policy is active.
 
-## Omarchy integration
+## Develop and test
 
-The installed `omarchy setup security fingerprint` workflow normally installs
-stock libfprint/fprintd, enrolls and verifies, then configures sudo, polkit and
-the lock screen. It does not resolve the current driver gap and may replace a
-custom libfprint-git installation with stock libfprint. Review the installed
-command before integrating a custom driver.
+Build the guarded driver and run the automated tests as your regular user:
 
-Disk-unlock passphrases remain in use. TPM configuration, Secure Boot and BIOS
-updates are outside this project's fingerprint setup scope.
+```sh
+./scripts/build-interactive.sh
+./scripts/test.sh
+uv run --with pytest pytest -q -p no:cacheprovider \
+  tests/test_sudo_auth.py tests/test_build_packaging.py
+uv run --with ruff ruff check tools/sudo-auth.py tests/test_sudo_auth.py
+uv run --with ruff ruff format --check tools/sudo-auth.py tests/test_sudo_auth.py
+```
+
+These tests cover simulated reader operations, enrollment workflow, print
+ownership, storage preservation, PAM password fallback, and packaging.
+They do not require fingerprint scans or change system authentication.
+Run `./scripts/package.sh` after rebuilding to produce an updated Arch package.
+
+For a physical verification check after persistent enrollment:
+
+```sh
+fprintd-verify -f right-index-finger "$USER"
+```
+
+Before enabling the fprintd integration, `./scripts/enroll-verify.sh` offers a
+standalone temporary **prepare → verify → result** test. It removes its own
+completed enrollment afterward and refuses to run while a competing fingerprint
+daemon is active. See the [testing guide](docs/testing.md) for test results,
+exit codes and recovery instructions.
+
+## Contribute
+
+Contributions are welcome via pull requests. Include relevant tests and describe
+any hardware validation performed. Keep fingerprints, enrollment databases and
+sensor pairing keys out of commits.
 
 ## License
 
-Original project material: copyright (c) 2026 Stacking Turtles Ltd., under the
-[MIT license](LICENSE). Any future third-party driver code retains its own license
-and attribution; this project license does not relicense upstream components.
+Original project code and documentation are licensed under the [MIT license](LICENSE).
+Copyright (c) 2026 Stacking Turtles Ltd.
+
+Bundled third-party components retain their own licenses and notices, including
+libfprint's LGPL-2.1-or-later license and the runtime data's MIT license.
