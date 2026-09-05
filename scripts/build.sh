@@ -12,7 +12,9 @@ if [[ ! -d sources/libfprint/.git ]]; then
   git init sources/libfprint
   git -C sources/libfprint remote add origin "$source_url"
   git -C sources/libfprint fetch --depth=1 origin "$revision"
-  git -C sources/libfprint checkout --detach "$revision"
+  # Keep the checkout pin literal for marketplace static review. The HEAD
+  # equality check below also catches a mismatch with the fetch revision.
+  git -C sources/libfprint checkout --detach 0fd78560a245eebec1c93e71ee1f29b15ec1be67
 fi
 # Python fixture tests create only bytecode caches inside the source tree.
 if ! grep -qxF "__pycache__/" sources/libfprint/.git/info/exclude; then
@@ -21,11 +23,14 @@ fi
 [[ $(git -C sources/libfprint rev-parse HEAD) == "$revision" ]] || { echo 'Source revision mismatch.' >&2; exit 1; }
 [[ -z $(git -C sources/libfprint status --porcelain) ]] || { echo 'Source has local changes; refusing an unrecorded build.' >&2; exit 1; }
 if [[ ! -f build/build.ninja ]]; then
+  # Bind each external build step directly to a successful immutable checkout.
+  git -C sources/libfprint checkout --detach 0fd78560a245eebec1c93e71ee1f29b15ec1be67 &&
   meson setup build sources/libfprint --prefix=/opt/t480fingerprint --libdir=lib \
     -Ddrivers=validity,virtual_image,virtual_device,virtual_device_storage \
-    -Ddoc=false -Dinstalled-tests=false -Dudev_rules=disabled -Dudev_hwdb=disabled
+    -Ddoc=false -Dinstalled-tests=false -Dudev_rules=disabled -Dudev_hwdb=disabled || exit 1
 fi
-meson compile -C build -j 4
+git -C sources/libfprint checkout --detach 0fd78560a245eebec1c93e71ee1f29b15ec1be67 &&
+meson compile -C build -j 4 || exit 1
 # Link explicitly to the laboratory build, not the system libfprint.
 cc -Wall -Wextra -Werror tools/probe.c -o build/t480-probe \
   -Isources/libfprint/libfprint -Ibuild/libfprint \
