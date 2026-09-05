@@ -89,3 +89,21 @@ and cleanup on package success/failure. Tests build isolated packages, never ins
   tank on 2026-09-05; the managed sudo PAM block was verified present afterward.
   Individual physical fallback, closed-lid and resume cases were not separately
   reported; do not describe those as independently verified hardware tests.
+
+## Omarchy panel — package -5
+
+- Root manifest declares `io.github.stackingturtles.t480fingerprint`, a standalone
+  panel. `scripts/plugin.py` provides read-only status and terminal actions.
+  Never install dependencies, enroll or change PAM when the panel loads.
+- Package -5 adds `prepare` to the root helper: enroll and verify with sudo
+  policy unchanged. `setup` still verifies before enabling sudo. Preserve this
+  distinction and the sensor deletion/reset guards.
+- Builds launched by the panel clone its exact committed Git HEAD into a
+  temporary cache directory; keep generated files out of the live plugin tree.
+- Run `scripts/test-plugin.sh` for manifest/QML and panel/helper checks. After
+  helper/package changes also run the existing upstream and packaging gates.
+  The test script documents two suppressed upstream QML metadata warnings.
+- Plugin removal does not undo system authentication: README removal order is
+  restore password-only sudo, remove the panel, then remove the package.
+- Marketplace submission requires owner confirmation of the exact issue body
+  and checklist per the marketplace submission guide, plus maintainer approval.
