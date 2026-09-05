@@ -14,10 +14,14 @@ fingerprint authentication only after enrollment and verification succeed.
 
 You need Omarchy on x86-64 and the supported ThinkPad T480 reader.
 
-Add the plugin to Omarchy and register its application launcher entry:
+Install the [v1.0.0 release](https://github.com/stackingturtles/t480fingerprint/releases/tag/v1.0.0),
+then register its application launcher entry:
 
 ```sh
-omarchy plugin add https://github.com/stackingturtles/t480fingerprint.git --enable
+omarchy plugin add https://github.com/stackingturtles/t480fingerprint.git
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.0
+omarchy plugin validate ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint
+omarchy plugin enable io.github.stackingturtles.t480fingerprint
 python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py install
 ```
 
@@ -34,6 +38,27 @@ Opening or enabling the panel does not install software or change authentication
 
 For installation from a source checkout without the panel, see
 [manual installation](docs/manual-install.md).
+
+## Release updates
+
+`main` is the development branch; release tags identify fixed versions. Omarchy's
+plugin updater follows the repository's default branch, even for detached tag
+checkouts. Do not use `omarchy plugin update` on this plugin if you want to keep
+it at a release version (this also applies to updating all plugins).
+
+For an existing installation, close the panel and select a release explicitly:
+
+```sh
+omarchy plugin disable io.github.stackingturtles.t480fingerprint
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint fetch origin --tags
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.0
+omarchy plugin validate ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint
+omarchy plugin enable io.github.stackingturtles.t480fingerprint
+```
+
+For future releases, substitute the chosen tag after reading its release notes.
+Then open the panel and choose **Install / update driver** if required. Changing
+the plugin checkout does not install or downgrade the system driver package.
 
 ## Use
 

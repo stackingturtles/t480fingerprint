@@ -16,7 +16,7 @@ sudo pacman -S --needed base-devel git meson ninja glib2-devel \
 Clone the repository, build as your regular user, and install the package:
 
 ```sh
-git clone https://github.com/stackingturtles/t480fingerprint.git
+git clone --branch v1.0.0 https://github.com/stackingturtles/t480fingerprint.git
 cd t480fingerprint
 ./scripts/build-interactive.sh
 ./scripts/test.sh
