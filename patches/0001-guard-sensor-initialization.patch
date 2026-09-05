@@ -1,11 +1,11 @@
-diff --git i/libfprint/drivers/validity/validity.c w/libfprint/drivers/validity/validity.c
+diff --git a/libfprint/drivers/validity/validity.c b/libfprint/drivers/validity/validity.c
 index 87990d2..e151d71 100644
---- i/libfprint/drivers/validity/validity.c
-+++ w/libfprint/drivers/validity/validity.c
+--- a/libfprint/drivers/validity/validity.c
++++ b/libfprint/drivers/validity/validity.c
 @@ -684,6 +684,9 @@ open_send_init_clean_slate (FpiSsm            *ssm,
        return;
      }
- 
+
 +  fpi_ssm_mark_failed (ssm, fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
 +      "Sensor firmware initialization required; clean-slate initialization is disabled in the T480 test build"));
 +  return;
@@ -15,19 +15,19 @@ index 87990d2..e151d71 100644
 @@ -748,6 +751,9 @@ open_upload_fwext (FpiSsm            *ssm,
        return;
      }
- 
+
 +  fpi_ssm_mark_failed (ssm, fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
 +      "Firmware upload disabled in the T480 test build"));
 +  return;
    fp_info ("Firmware extension not loaded — starting upload via TLS");
- 
+
    self->open_ssm = ssm;
-diff --git i/libfprint/drivers/validity/validity_data.c w/libfprint/drivers/validity/validity_data.c
+diff --git a/libfprint/drivers/validity/validity_data.c b/libfprint/drivers/validity/validity_data.c
 index 3507d78..2773c89 100644
---- i/libfprint/drivers/validity/validity_data.c
-+++ w/libfprint/drivers/validity/validity_data.c
+--- a/libfprint/drivers/validity/validity_data.c
++++ b/libfprint/drivers/validity/validity_data.c
 @@ -39,7 +39,7 @@
- 
+
  /* Search paths for data files */
  const gchar *validity_data_search_paths[] = {
 -  "/usr/share/libfprint/validity",
@@ -35,33 +35,33 @@ index 3507d78..2773c89 100644
    "/usr/local/share/libfprint/validity",
    NULL,
  };
-diff --git i/libfprint/drivers/validity/validity_pair.c w/libfprint/drivers/validity/validity_pair.c
+diff --git a/libfprint/drivers/validity/validity_pair.c b/libfprint/drivers/validity/validity_pair.c
 index b6c040e..7e13bb1 100644
---- i/libfprint/drivers/validity/validity_pair.c
-+++ w/libfprint/drivers/validity/validity_pair.c
+--- a/libfprint/drivers/validity/validity_pair.c
++++ b/libfprint/drivers/validity/validity_pair.c
 @@ -656,6 +656,9 @@ pair_check_needed (FpiSsm            *ssm,
        return;
      }
- 
+
 +  fpi_ssm_mark_failed (ssm, fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
 +      "Sensor initialization required; automatic pairing is disabled in the T480 test build"));
 +  return;
    fp_info ("Flash has 0 partitions — device needs pairing");
- 
+
    /* Look up device descriptor */
 @@ -734,6 +737,9 @@ pair_verify_tls_recv (FpiSsm            *ssm,
        return;
      }
- 
+
 +  fpi_ssm_mark_failed (ssm, fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
 +      "Sensor pairing keys unavailable; automatic re-pairing is disabled in the T480 test build"));
 +  return;
    fp_info ("TLS keys missing from flash — starting pairing");
- 
+
    /* Look up device descriptor */
 @@ -1292,6 +1298,9 @@ validity_pair_run_state (FpiSsm   *ssm,
        break;
- 
+
      case PAIR_FACTORY_RESET_SEND:
 +      fpi_ssm_mark_failed (ssm, fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
 +          "Factory reset disabled in the T480 test build"));
@@ -69,3 +69,77 @@ index b6c040e..7e13bb1 100644
        {
          guint8 cmd[98];
          FpiByteWriter writer;
+diff --git a/libfprint/drivers/validity/validity_verify.c b/libfprint/drivers/validity/validity_verify.c
+index 5a0c8a0..cf87cd7 100644
+--- a/libfprint/drivers/validity/validity_verify.c
++++ b/libfprint/drivers/validity/validity_verify.c
+@@ -1336,6 +1336,15 @@ validity_delete (FpDevice *device)
+   FpiDeviceValidity *self = FPI_DEVICE_VALIDITY (device);
+   FpiSsm *ssm;
+
++  /* fprintd must not garbage-collect unknown prints on this host. */
++  if (g_strcmp0 (g_getenv ("FP_T480_PRESERVE_PRINTS"), "1") == 0)
++    {
++      fpi_device_delete_complete (device,
++        fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
++                                 "Sensor print deletion disabled by T480 preservation policy"));
++      return;
++    }
++
+   G_DEBUG_HERE ();
+
+   if (self->emulation_prints)
+@@ -1445,6 +1454,15 @@ validity_clear_storage (FpDevice *device)
+   FpiDeviceValidity *self = FPI_DEVICE_VALIDITY (device);
+   FpiSsm *ssm;
+
++  /* fprintd must not garbage-collect unknown prints on this host. */
++  if (g_strcmp0 (g_getenv ("FP_T480_PRESERVE_PRINTS"), "1") == 0)
++    {
++      fpi_device_clear_storage_complete (device,
++        fpi_device_error_new_msg (FP_DEVICE_ERROR_NOT_SUPPORTED,
++                                 "Sensor print deletion disabled by T480 preservation policy"));
++      return;
++    }
++
+   G_DEBUG_HERE ();
+
+   if (self->emulation_prints)
+diff --git a/tests/validity/custom.py b/tests/validity/custom.py
+index c9e4f37..6969aca 100644
+--- a/tests/validity/custom.py
++++ b/tests/validity/custom.py
+@@ -1,5 +1,6 @@
+ #!/usr/bin/python3
+
++import os
+ import traceback
+ import sys
+ import gi
+@@ -60,6 +61,17 @@ stored = d.list_prints_sync()
+ print("listing done")
+ assert len(stored) == 1
+
++# Our fprintd policy must refuse deletion without changing sensor records.
++os.environ['FP_T480_PRESERVE_PRINTS'] = '1'
++for delete in (lambda: d.delete_print_sync(p), d.clear_storage_sync):
++    try:
++        delete()
++    except GLib.Error as error:
++        assert error.matches(FPrint.DeviceError.quark(), FPrint.DeviceError.NOT_SUPPORTED)
++    else:
++        raise AssertionError('Preservation policy allowed deletion')
++assert len(d.list_prints_sync()) == 1
++
+ # 4. Verify against the enrolled print
+ print("verifying")
+ assert d.get_finger_status() == FPrint.FingerStatusFlags.NONE
+@@ -92,6 +104,8 @@ del deserialized_prints
+ while not identified:
+     ctx.iteration(True)
+
++del os.environ['FP_T480_PRESERVE_PRINTS']
++
+ # 6. Delete the enrolled print
+ print("deleting")
+ d.delete_print_sync(p)

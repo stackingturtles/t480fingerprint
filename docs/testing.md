@@ -175,3 +175,8 @@ Source validation uses a disposable Git index populated from HEAD plus the
 reviewed patch. It compares source contents rather than user-configurable diff
 formatting. Packaging allocates a fresh staging directory per invocation and
 removes only that directory, leaving any pre-existing staging work untouched.
+# Persistent sudo authentication
+
+For retained enrollment, sudo verification, password fallback and recovery,
+follow [sudo authentication testing](sudo-auth.md). The laboratory workflow
+below uses temporary enrollment and does not configure authentication.

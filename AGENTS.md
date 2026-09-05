@@ -69,3 +69,23 @@ After changing source verification or packaging, run scripts/test.sh and
 after the interactive build. Five integration cases cover Git-prefix independence,
 rejection of unreviewed edits, real-index preservation, obsolete staging exclusion,
 and cleanup on package success/failure. Tests build isolated packages, never install.
+
+## Sudo integration — package -4
+
+- User requested persistent enrollment and sudo fingerprint authentication with
+  password fallback. `scripts/setup-sudo.sh` runs the packaged root-owned helper.
+  It configures stock fprintd to load our guarded library, enrolls (or retains
+  an existing selected finger), verifies, then adds the sudo PAM block.
+- Only sudo is in scope. No lock-screen, polkit, SDDM or disk-unlock changes.
+  The native temporary test is distinct from persistent fprintd enrollment.
+- Service drop-in sets FP_T480_PRESERVE_PRINTS=1. The driver refuses deletion
+  and clear-storage under this policy, including fprintd garbage collection.
+  Do not relax it to resolve an unknown/duplicate orphan fingerprint.
+- `docs/sudo-auth.md` covers installation, physical tests, backups and recovery.
+  Setup/disable preserve other administrator edits and refuse unknown PAM policy.
+- Tests: 18 setup/Linux-PAM cases, 5 build/package cases, 99 Meson entries pass
+  (32 skips), including new emulated storage-preservation assertions. The user
+  confirmed the persistent enrollment/verification and sudo workflow works on
+  tank on 2026-09-05; the managed sudo PAM block was verified present afterward.
+  Individual physical fallback, closed-lid and resume cases were not separately
+  reported; do not describe those as independently verified hardware tests.

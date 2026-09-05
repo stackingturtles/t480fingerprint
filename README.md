@@ -3,11 +3,34 @@
 Enable the ThinkPad T480's **Synaptics Metallica MIS Touch fingerprint reader
 (USB 06cb:009a)** on Arch Linux / Omarchy, starting with host `tank`.
 
-**Status (2026-09-05):** native driver built; automated tests and live USB
-detection passed. An isolated `t480fingerprint-lab` Arch package provides the
-probe under `/opt/t480fingerprint`. The guarded reader-open check passed. The interactive prepare/verify test is
-available; a real matching result
-requires you to scan a finger. Login integration remains disabled. See [testing](docs/testing.md) and [source review](docs/source-review.md).
+**Status (2026-09-05):** the user confirmed persistent enrollment, verification
+and fingerprint sudo working on `tank`. Package release -4 provides the guarded
+native driver and setup helper under `/opt/t480fingerprint`. Automated tests
+passed. Optional sudo integration is available below; it activates only after
+a successful persistent enrollment and verification.
+See [testing](docs/testing.md) and [source review](docs/source-review.md).
+
+## Enable fingerprint sudo
+
+With package release **-4** installed, run in a visible terminal:
+
+```sh
+cd ~/code/t480fingerprint
+./scripts/setup-sudo.sh
+```
+
+Enter your password, then follow **PREPARE** (repeated finger scans) and
+**VERIFY** (scan once more). This enrollment is retained for your Linux account.
+An existing right-index enrollment is verified without replacing it.
+Choose another finger with `./scripts/setup-sudo.sh --finger left-index-finger`.
+
+After success, run `sudo -k` then `sudo -v`. A matching fingerprint authenticates;
+one failed attempt or a 10-second scan timeout leads to the normal password prompt.
+With the laptop lid closed, sudo skips the scanner. Cached sudo authorization
+and commands allowed with NOPASSWD do not prompt.
+
+See [sudo setup, tests and recovery](docs/sudo-auth.md) for installation,
+additional fingerprints, password fallback tests and rollback.
 
 ## Run the fingerprint test
 
@@ -42,8 +65,9 @@ Build dependencies: `base-devel git meson ninja glib2-devel gobject-introspectio
 libgusb libgudev openssl cairo umockdev python-cairo python-gobject`.
 Install missing dependencies with `omarchy pkg add <packages...>`.
 
-The laboratory library is loaded only by test executables. The system's
-libfprint/fprintd and PAM configuration remain in place.
+By default the laboratory library is loaded only by test executables.
+Optional sudo setup makes the stock fprintd service load this private library
+through a local systemd drop-in. System libfprint is not replaced.
 
 The 2026-09-05 inspection found fprintd 1.94.5-2 and libfprint 1.94.100-1
 installed, but `fprintd-list ijonas` returned `No devices available`.
