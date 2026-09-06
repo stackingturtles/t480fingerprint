@@ -14,12 +14,12 @@ fingerprint authentication only after enrollment and verification succeed.
 
 You need Omarchy on x86-64 and the supported ThinkPad T480 reader.
 
-Install the [v1.0.0 release](https://github.com/stackingturtles/t480fingerprint/releases/tag/v1.0.0),
+Install the [v1.0.1 release](https://github.com/stackingturtles/t480fingerprint/releases/tag/v1.0.1),
 then register its application launcher entry:
 
 ```sh
 omarchy plugin add https://github.com/stackingturtles/t480fingerprint.git
-git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.0
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.1
 omarchy plugin validate ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint
 omarchy plugin enable io.github.stackingturtles.t480fingerprint
 python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py install
@@ -51,7 +51,7 @@ For an existing installation, close the panel and select a release explicitly:
 ```sh
 omarchy plugin disable io.github.stackingturtles.t480fingerprint
 git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint fetch origin --tags
-git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.0
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.1
 omarchy plugin validate ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint
 omarchy plugin enable io.github.stackingturtles.t480fingerprint
 ```
@@ -127,6 +127,9 @@ separate configuration. Sensor deletion and clearing are blocked while the
 service's preservation policy is active.
 
 ## Develop and test
+
+Contributor-only `AGENTS.md` files are kept local and ignored by Git; they are
+not included in the installed plugin tree or release source archives.
 
 Build the guarded driver and run the automated tests as your regular user:
 
