@@ -14,12 +14,12 @@ fingerprint authentication only after enrollment and verification succeed.
 
 You need Omarchy on x86-64 and the supported ThinkPad T480 reader.
 
-Install the [v1.0.1 release](https://github.com/stackingturtles/t480fingerprint/releases/tag/v1.0.1),
+Install the [v1.0.2 release](https://github.com/stackingturtles/t480fingerprint/releases/tag/v1.0.2),
 then register its application launcher entry:
 
 ```sh
 omarchy plugin add https://github.com/stackingturtles/t480fingerprint.git
-git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.1
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.2
 omarchy plugin validate ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint
 omarchy plugin enable io.github.stackingturtles.t480fingerprint
 python3 -I ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint/scripts/launcher.py install
@@ -30,11 +30,15 @@ select it. Launcher registration uses your user application directory and does
 not require sudo. Omarchy does not run custom plugin installation/removal hooks,
 so registration is an explicit setup step.
 
-Choose **Install / update driver**. A terminal opens to install dependencies,
-build the pinned driver, run its tests and install the Arch package. Builds run
-in a temporary directory under `~/.cache/t480fingerprint`, outside the plugin
-folder. Installation may take several minutes and ask for your password.
+Choose **Install / update driver**. A terminal downloads the release package,
+verifies its exact size and SHA-256 recorded in the plugin, and asks for sudo to
+install it through pacman. A root-owned copy is checked again before installation.
+The installer never builds source or installs compiler dependencies. Missing
+runtime dependencies must be installed through your normal Omarchy system setup;
+pacman refuses installation if they are absent. You need `fprintd`, Python,
+GLib, libgusb, OpenSSL, Cairo and Pixman, plus curl for the download.
 Opening or enabling the panel does not install software or change authentication.
+
 
 For installation from a source checkout without the panel, see
 [manual installation](docs/manual-install.md).
@@ -51,7 +55,7 @@ For an existing installation, close the panel and select a release explicitly:
 ```sh
 omarchy plugin disable io.github.stackingturtles.t480fingerprint
 git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint fetch origin --tags
-git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.1
+git -C ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint checkout --detach v1.0.2
 omarchy plugin validate ~/.config/omarchy/plugins/io.github.stackingturtles.t480fingerprint
 omarchy plugin enable io.github.stackingturtles.t480fingerprint
 ```
@@ -131,16 +135,24 @@ service's preservation policy is active.
 Contributor-only `AGENTS.md` files are kept local and ignored by Git; they are
 not included in the installed plugin tree or release source archives.
 
-Build the guarded driver and run the automated tests as your regular user:
+Development uses system Python 3.14 and the exact pytest/Ruff versions and
+transitive artifact hashes in `uv.lock`. Bootstrap once with `uv sync --locked`
+(network access), or `uv sync --frozen --offline` if already cached. Test commands
+run frozen and offline; missing cached dependencies fail instead of downloading.
+
+Source builds are a contributor workflow using your installed toolchain. They
+are not the checksum-pinned package distributed by the panel, and are not claimed
+to reproduce it byte for byte. See [build dependencies](docs/testing.md).
+Build the guarded driver and run tests as your regular user:
 
 ```sh
 ./scripts/build-interactive.sh
 ./scripts/test.sh
 ./scripts/test-plugin.sh
-uv run --with pytest pytest -q -p no:cacheprovider \
-  tests/test_sudo_auth.py tests/test_plugin.py tests/test_build_packaging.py
-uv run --with ruff ruff check tools/sudo-auth.py scripts/plugin.py tests/test_sudo_auth.py tests/test_plugin.py
-uv run --with ruff ruff format --check tools/sudo-auth.py scripts/plugin.py tests/test_sudo_auth.py tests/test_plugin.py
+uv run --frozen --offline pytest -q -p no:cacheprovider \
+  tests/test_sudo_auth.py tests/test_plugin.py tests/test_release_install.py tests/test_build_packaging.py
+uv run --frozen --offline ruff check tools/sudo-auth.py scripts/plugin.py tests/test_sudo_auth.py tests/test_plugin.py
+uv run --frozen --offline ruff format --check tools/sudo-auth.py scripts/plugin.py tests/test_sudo_auth.py tests/test_plugin.py
 ```
 
 `test-plugin.sh` validates a clean plugin snapshot and lints QML against the

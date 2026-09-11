@@ -2,6 +2,16 @@
 
 ## Automated tests
 
+Use system Python 3.14 and uv. Run `uv sync --locked` once to download the exact
+locked pytest/Ruff artifacts, or `uv sync --frozen --offline` with a populated
+cache. All test commands use `uv run --frozen --offline`; do not use `--with`.
+
+Contributor source-build prerequisites are base-devel, Git, Meson, Ninja,
+glib2-devel, gobject-introspection, libgusb, libgudev, OpenSSL, Cairo, Pixman,
+umockdev, Python, python-cairo, python-gobject, python-mako, python-markdown and
+python-tqdm. Provision these through your system administrator. This development
+workflow uses the local toolchain; the panel installs a fixed package instead.
+
 Run `./scripts/build-interactive.sh`, then `./scripts/test.sh` as your ordinary user.
 Tests use virtual devices and prerecorded fixtures, with hardware access limited
 by the upstream test environment. Do not run the suite as root or run the upstream
@@ -161,7 +171,7 @@ After `./scripts/build-interactive.sh`, run both test gates:
 
 ```sh
 ./scripts/test.sh
-uv run --with pytest pytest -q -p no:cacheprovider tests/test_build_packaging.py
+uv run --frozen --offline pytest -q -p no:cacheprovider tests/test_build_packaging.py
 ```
 
 The five Python cases exercise the real incremental build with default Git diff
@@ -169,7 +179,8 @@ prefixes, source validation with both prefix settings (including rejecting extra
 edits and preserving the real index), and isolated package builds that exclude
 obsolete staging files and clean up after success or failure. They need `uv`,
 the normal build dependencies and `makepkg`; no root, install or sensor access
-is used. The first invocation may download pytest into uv's cache.
+is used. Bootstrap with `uv sync --locked` once; subsequent test runs use the committed
+hash-bound lock offline. Missing cache entries fail without a network fallback.
 
 Source validation uses a disposable Git index populated from HEAD plus the
 reviewed patch. It compares source contents rather than user-configurable diff

@@ -54,39 +54,3 @@ def test_action_arguments_never_use_a_shell():
         plugin.action_command("delete", "left-thumb", "user")
     with pytest.raises(ValueError):
         plugin.action_command("prepare", "right-index-finger; id", "user")
-
-
-@pytest.mark.parametrize("build_fails", [False, True])
-def test_install_pins_local_commit_and_cleans_build(tmp_path, monkeypatch, build_fails):
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    revision = "a" * 40
-    monkeypatch.setattr(
-        plugin.subprocess,
-        "run",
-        lambda *a, **kw: subprocess.CompletedProcess(a, 0, revision),
-    )
-    calls = []
-
-    def run(args, timeout=1800, cwd=None):
-        calls.append(args)
-        if args[1] == "clone":
-            Path(args[-1]).mkdir()
-        if "./scripts/build-interactive.sh" in args and build_fails:
-            raise subprocess.CalledProcessError(1, args)
-        if "./scripts/package.sh" in args:
-            package = cwd / "build/package/t480fingerprint-lab-test.pkg.tar.zst"
-            package.parent.mkdir(parents=True)
-            package.touch()
-
-    monkeypatch.setattr(plugin, "run", run)
-    if build_fails:
-        with pytest.raises(subprocess.CalledProcessError):
-            plugin.install()
-    else:
-        plugin.install()
-    assert calls[1][-3:] == ["checkout", "--detach", revision]
-    assert (
-        any(args[:3] == ["/usr/bin/sudo", "/usr/bin/pacman", "-U"] for args in calls)
-        != build_fails
-    )
-    assert not list((tmp_path / "t480fingerprint").iterdir())

@@ -12,13 +12,11 @@ disk passphrase and TPM settings are unaffected.
 
 ## Install and prepare
 
-Build and install as documented in testing.md, using package release -5:
+Install the checksum-pinned package as described in [manual installation](manual-install.md),
+then run the combined prepare-and-enable workflow:
 
 ```sh
-./scripts/build-interactive.sh
-./scripts/test.sh
-./scripts/package.sh
-sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-5-x86_64.pkg.tar.zst
+python3 -I scripts/plugin.py install
 ./scripts/setup-sudo.sh
 ```
 
@@ -98,8 +96,8 @@ reliability; record those results separately after performing these steps.
 Automated tests (no root, no real reader, no authentication-policy changes):
 
 ```sh
-uv run --with pytest pytest -q -p no:cacheprovider tests/test_sudo_auth.py
-uv run --with pytest pytest -q -p no:cacheprovider tests/test_build_packaging.py
+uv run --frozen --offline pytest -q -p no:cacheprovider tests/test_sudo_auth.py
+uv run --frozen --offline pytest -q -p no:cacheprovider tests/test_build_packaging.py
 ./scripts/test.sh
 ```
 

@@ -4,29 +4,18 @@ You need Omarchy on x86-64 and the supported fingerprint reader. The sudo setup
 uses Omarchy's laptop-lid helper and the standard `auth include system-auth`
 PAM configuration.
 
-Install the build, test and authentication dependencies:
+Install the plugin checkout as described in the README. In a visible terminal,
+run its package installer without opening the panel:
 
 ```sh
-sudo pacman -S --needed base-devel git meson ninja glib2-devel \
-  gobject-introspection libgusb libgudev openssl cairo pixman umockdev \
-  python python-cairo python-gobject python-mako python-markdown python-tqdm \
-  fprintd uv
+python3 -I scripts/plugin.py install
 ```
 
-Clone the repository, build as your regular user, and install the package:
-
-```sh
-git clone --branch v1.0.1 https://github.com/stackingturtles/t480fingerprint.git
-cd t480fingerprint
-./scripts/build-interactive.sh
-./scripts/test.sh
-./scripts/package.sh
-sudo pacman -U build/package/t480fingerprint-lab-1.94.100.r626.0fd7856-5-x86_64.pkg.tar.zst
-```
-
-The build fetches pinned driver and runtime-data sources. The package installs
-under `/opt/t480fingerprint`; sudo setup loads its driver through a local
-`fprintd` service override and backs up configuration before changing it.
+This is the same checksum-pinned release installation as the panel. It requires
+the release asset to have been published and the documented runtime dependencies
+to be present. It installs under `/opt/t480fingerprint` without building source.
+For contributor source builds, see [testing](testing.md); those use your local
+toolchain and are separate from the released artifact.
 
 ## Prepare and enable sudo
 

@@ -23,12 +23,14 @@ root-owned authentication helper retains its separate privileged lock.
 
 ## Installation and privileges
 
-Driver installation builds the exact local plugin Git commit in a temporary
-cache checkout and fetches external sources at full pinned commits. It installs
-dependencies through Omarchy, builds/tests without root, then asks pacman to
-install the resulting package with sudo. Temporary builds are removed when the
-action finishes or fails. The Git-managed plugin folder stays free of generated
-libraries, symlinks and nested build repositories.
+Driver installation downloads the fixed release URL in `scripts/plugin.py`.
+Its expected size and SHA-256 are part of the reviewed plugin tree. curl limits
+time and redirects to HTTPS; prlimit independently caps the output file size; failures never fall back to a source build.
+The package is checked without privileges, copied from its held descriptor into
+a root-owned 0700 temporary directory, checked again, then installed through
+pacman. The root directory is removed on success or failure. Neither source builds
+nor build dependency installation run from the panel. Existing runtime libraries
+remain the operating system's responsibility.
 
 The package installs the driver and helper under `/opt/t480fingerprint`.
 Prepare connects stock fprintd to the private driver, enrolls/verifies, and
@@ -58,8 +60,8 @@ omarchy-shell shell summon io.github.stackingturtles.t480fingerprint '{}'
 
 Do not symlink a build checkout into the plugin directory: validation rejects
 symlinks and builds contain private development state. Never edit packaged
-Omarchy files. A development snapshot should include `.git` if testing the
-install button; it builds the snapshot's committed HEAD.
+Omarchy files. The install button needs the published artifact matching its embedded pin; it
+does not need Git metadata. Local builds do not override that pin.
 
 Check open/close, Escape, outside click, keyboard traversal and finger selection.
 Check disable/re-enable, shell restart, and removal/reinstallation. Confirm no
